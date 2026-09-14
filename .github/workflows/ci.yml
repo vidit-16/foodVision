@@ -1,0 +1,81 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: Tests (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+
+      # CPU wheels only. The suite never downloads the checkpoint, so CI runs
+      # in about a minute rather than pulling 95MB on every job.
+      - name: Install dependencies
+        run: |
+          pip install --extra-index-url https://download.pytorch.org/whl/cpu \
+            -r requirements-dev.txt
+
+      - name: Lint
+        run: ruff check app tests training evaluation
+
+      - name: Tests
+        run: pytest -q
+
+  contracts:
+    name: Artifact contracts
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: No model weights are committed
+        run: |
+          if git ls-files | grep -E '\.(pt|pth|onnx)$'; then
+            echo "Model weights must be published as a release asset, not committed."
+            exit 1
+          fi
+
+      - name: Repository stays small
+        run: |
+          size=$(du -sk .git | cut -f1)
+          echo "git directory: ${size}KB"
+          test "$size" -lt 51200
+
+      - name: classes.json holds 101 labels
+        run: |
+          python -c "import json; c=json.load(open('model/classes.json')); assert isinstance(c, list) and len(c)==101, len(c)"
+
+      - name: Notebook carries no outputs or credentials
+        run: |
+          python - <<'CHECK'
+          import json, sys
+          nb = json.load(open("training/food_vision.ipynb"))
+          offenders = [i for i, c in enumerate(nb["cells"]) if c.get("outputs")]
+          if offenders:
+              sys.exit(f"notebook cells still carry outputs: {offenders}")
+          source = json.dumps(nb)
+          for marker in ("kaggle.json", "files.upload()", "api_key", "\"key\":"):
+              if marker in source:
+                  sys.exit(f"notebook contains {marker!r}; strip it before committing")
+          CHECK
+
+  docker:
+    name: Docker build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build image
+        run: docker build -t foodvision:ci .
