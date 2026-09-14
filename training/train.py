@@ -27,6 +27,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 import time
 from pathlib import Path
 
@@ -37,8 +38,12 @@ from torchvision import transforms
 from torchvision.datasets import Food101
 from torchvision.models import ResNet50_Weights, resnet50
 
-from app.config import IMAGE_SIZE, NORMALIZE_MEAN, NORMALIZE_STD
-from app.preprocessing import inference_transform
+# Running `python training/train.py` puts only this script's folder on sys.path;
+# add the repo root so `app` imports resolve.
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+from app.config import IMAGE_SIZE, NORMALIZE_MEAN, NORMALIZE_STD  # noqa: E402
+from app.preprocessing import inference_transform  # noqa: E402
 
 
 def parse_args() -> argparse.Namespace:

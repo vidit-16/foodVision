@@ -20,6 +20,7 @@ from __future__ import annotations
 import argparse
 import json
 import platform
+import sys
 from collections import defaultdict
 from datetime import datetime, timezone
 from pathlib import Path
@@ -28,8 +29,12 @@ import torch
 from torch.utils.data import DataLoader
 from torchvision.datasets import Food101
 
-from app.model import load_classes, load_model, select_device
-from app.preprocessing import inference_transform
+# Running `python evaluation/evaluate.py` puts only this script's folder on sys.path;
+# add the repo root so `app` imports resolve.
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+from app.model import load_classes, load_model, select_device  # noqa: E402
+from app.preprocessing import inference_transform  # noqa: E402
 
 
 def parse_args() -> argparse.Namespace:
