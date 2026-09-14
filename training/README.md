@@ -2,11 +2,17 @@
 
 ## Provenance of the released checkpoints
 
-### v1.1.0 (served)
+### v2.0.0 (served)
 
-Trained with `train.py` via `colab_train_and_eval.ipynb` on a Colab T4, using the
-default recipe below on the official train split only. It scores 82.19% top-1
-and 96.27% top-5 on the 25,250 test images; see `evaluation/RESULTS.md`.
+ConvNeXt-Tiny trained with `train.py` via `colab_train_and_eval.ipynb` on a
+free Colab T4, using the recipe below on the official train split only. It
+scores 91.89% top-1 and 98.76% top-5 on the 25,250 test images; see
+`evaluation/RESULTS.md`.
+
+### v1.1.0 (superseded)
+
+ResNet-50 on the official train split with the original notebook recipe.
+82.19% top-1, 96.27% top-5.
 
 ### v1.0.0 (superseded)
 
@@ -26,7 +32,7 @@ the Food-101 test split would report training accuracy under a test label, and
 the repository claims nothing about its accuracy.
 
 `train.py` corrects this. It uses the official split and never opens the test
-data, which is how v1.1.0 was produced.
+data, which is how v1.1.0 and v2.0.0 were produced.
 
 ## Files
 

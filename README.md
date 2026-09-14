@@ -22,17 +22,21 @@ curl -F "file=@dinner.jpg" http://localhost:8000/predict
 
 ## Status
 
-**82.19% top-1, 96.27% top-5 on the 25,250 held-out Food-101 test images.**
+**91.89% top-1, 98.76% top-5 on the 25,250 held-out Food-101 test images.**
 
-The served checkpoint (release `v1.1.0`) was trained with `training/train.py` on
-the official train split only; the test split was never seen during training.
-Per-class accuracy and the most common confusions are in
-`evaluation/RESULTS.md`. The hardest cases are visually similar dishes —
-filet mignon vs. steak, beef vs. tuna tartare, ramen vs. pho.
+The served checkpoint (release `v2.0.0`, ConvNeXt-Tiny) was trained with
+`training/train.py` on the official train split only; the test split was never
+seen during training. Per-class accuracy and the most common confusions are in
+`evaluation/RESULTS.md`. What errors remain are mostly between genuinely similar
+dishes — steak vs. filet mignon, chocolate cake vs. mousse, beef vs. tuna tartare.
 
-The earlier `v1.0.0` checkpoint was trained on all 101,000 images, test split
-included, and is kept only for provenance; no accuracy is claimed for it.
-Details in `training/README.md`.
+| Release | Model | Top-1 | Top-5 |
+| --- | --- | --- | --- |
+| `v2.0.0` (served) | ConvNeXt-Tiny, improved recipe | 91.89% | 98.76% |
+| `v1.1.0` | ResNet-50, original recipe | 82.19% | 96.27% |
+| `v1.0.0` | ResNet-50, trained on test data | not measurable | — |
+
+Details of each in `training/README.md`.
 
 ## Dataset
 

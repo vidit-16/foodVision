@@ -20,9 +20,10 @@ WEIGHTS_URL = os.getenv(
     "FOODVISION_WEIGHTS_URL",
     "https://github.com/vidit-16/foodVision/releases/download/v2.0.0/food_vision_convnext_tiny.pt",
 )
-# Filled in once the v2.0.0 checkpoint is trained. Empty disables verification,
-# so this must be set before the branch is merged.
-WEIGHTS_SHA256 = os.getenv("FOODVISION_WEIGHTS_SHA256", "")
+WEIGHTS_SHA256 = os.getenv(
+    "FOODVISION_WEIGHTS_SHA256",
+    "8c68831bc884ed0b8e5aad10f639d3d81eb7cd936b07a8e63a65767bec7d122a",
+)
 WEIGHTS_CACHE_DIR = Path(
     os.getenv("FOODVISION_CACHE_DIR", Path.home() / ".cache" / "foodvision")
 )
