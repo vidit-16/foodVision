@@ -1,8 +1,16 @@
 # Training
 
-## Provenance of the released checkpoint
+## Provenance of the released checkpoints
 
-`food_vision_resnet50.pt` (release `v1.0.0`) was trained in
+### v1.1.0 (served)
+
+Trained with `train.py` via `colab_train_and_eval.ipynb` on a Colab T4, using the
+default recipe below on the official train split only. It scores 82.19% top-1
+and 96.27% top-5 on the 25,250 test images; see `evaluation/RESULTS.md`.
+
+### v1.0.0 (superseded)
+
+The original checkpoint was trained in
 `food_vision.ipynb`: ResNet-50 initialised from ImageNet-V2 weights, final layer
 replaced with a 101-way head, fully fine-tuned for 5 epochs with Adam at 1e-4,
 plain cross-entropy, mixed precision, batch size 32. About 73 minutes on a
@@ -13,13 +21,12 @@ mirror through a single `ImageFolder` over `/content/images`, which is all
 101,000 Food-101 images — the official 25,250-image test split included. The
 progress bar confirms it: 3,157 batches of 32 per epoch.
 
-So no honest accuracy number can be produced for this checkpoint. Scoring it on
-the Food-101 test split would report training accuracy under a test label. The
-repository therefore claims nothing about its accuracy, and
-`evaluation/RESULTS.md` says why.
+So no honest accuracy number can be produced for that checkpoint. Scoring it on
+the Food-101 test split would report training accuracy under a test label, and
+the repository claims nothing about its accuracy.
 
 `train.py` corrects this. It uses the official split and never opens the test
-data, so a checkpoint it produces can be evaluated properly.
+data, which is how v1.1.0 was produced.
 
 ## Files
 

@@ -13,11 +13,11 @@ CLASSES_PATH = Path(os.getenv("FOODVISION_CLASSES", REPO_ROOT / "model" / "class
 # and downloaded on first use into the cache directory below.
 WEIGHTS_URL = os.getenv(
     "FOODVISION_WEIGHTS_URL",
-    "https://github.com/vidit-16/foodVision/releases/download/v1.0.0/food_vision_resnet50.pt",
+    "https://github.com/vidit-16/foodVision/releases/download/v1.1.0/food_vision_resnet50.pt",
 )
 WEIGHTS_SHA256 = os.getenv(
     "FOODVISION_WEIGHTS_SHA256",
-    "faa9aed3658982ac22be66618b0147a93859c201535c2745a213e8ace5a144c2",
+    "c97169ebe564d91264b5201bc27b2d31878f8022ea08aaee092a7de7eb188f21",
 )
 WEIGHTS_CACHE_DIR = Path(
     os.getenv("FOODVISION_CACHE_DIR", Path.home() / ".cache" / "foodvision")

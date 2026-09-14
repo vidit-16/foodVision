@@ -22,14 +22,17 @@ curl -F "file=@dinner.jpg" http://localhost:8000/predict
 
 ## Status
 
-**The released checkpoint is unvalidated, and this repository claims no accuracy
-for it.** It was trained on all 101,000 Food-101 images, the official test split
-included, so there is no unseen data left to score it against. Details in
-`training/README.md`.
+**82.19% top-1, 96.27% top-5 on the 25,250 held-out Food-101 test images.**
 
-`training/train.py` fixes that — it uses the official split and never opens the
-test data. Retrain with it, then run `evaluation/evaluate.py` for a number that
-means something.
+The served checkpoint (release `v1.1.0`) was trained with `training/train.py` on
+the official train split only; the test split was never seen during training.
+Per-class accuracy and the most common confusions are in
+`evaluation/RESULTS.md`. The hardest cases are visually similar dishes —
+filet mignon vs. steak, beef vs. tuna tartare, ramen vs. pho.
+
+The earlier `v1.0.0` checkpoint was trained on all 101,000 images, test split
+included, and is kept only for provenance; no accuracy is claimed for it.
+Details in `training/README.md`.
 
 ## Dataset
 
@@ -38,8 +41,7 @@ categories, 1,000 images each, with a fixed split of 750 train and 250 test
 images per class.
 
 `train.py` uses only the train split, holding back 10% for validation and
-leaving the 25,250 test images for evaluation. The released checkpoint predates
-that discipline — see Status above.
+leaving the 25,250 test images for evaluation.
 
 The dataset is downloaded on demand by torchvision and is not stored here.
 
@@ -47,7 +49,7 @@ The dataset is downloaded on demand by torchvision and is not stored here.
 
 ResNet-50 initialised from ImageNet-V2 weights, final layer replaced with a
 101-way linear head, then fine-tuned end to end for 5 epochs with Adam at 1e-4
-and mixed precision. The released artifact is a plain `state_dict` (320 tensors,
+and mixed precision, on the official train split. The released artifact is a plain `state_dict` (320 tensors,
 float32, 95MB).
 
 Weights are **not committed to git**. They are published as a release asset and
@@ -121,8 +123,7 @@ python evaluation/evaluate.py --data-dir ./data
 ```
 
 Runs the full test split and writes top-1 and top-5 accuracy, per-class
-accuracy, and the most frequent confusions to `evaluation/RESULTS.md`. Only
-meaningful against a checkpoint trained with `train.py`.
+accuracy, and the most frequent confusions to `evaluation/RESULTS.md`.
 
 ## Tests
 
