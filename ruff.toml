@@ -1,0 +1,15 @@
+# Lint rules are pinned explicitly so CI behaves the same across ruff releases.
+line-length = 100
+target-version = "py310"
+
+# Notebooks are not linted: food_vision.ipynb is a historical artifact kept
+# verbatim, and colab_train_and_eval.ipynb is a runner whose cells depend on the
+# Colab environment. train.py is the maintained version of the pipeline.
+exclude = ["training/*.ipynb"]
+
+[lint]
+select = ["E", "F", "I", "B", "UP", "DTZ"]
+
+[lint.per-file-ignores]
+# Depends(...) / File(...) in defaults is the documented FastAPI idiom.
+"app/main.py" = ["B008"]

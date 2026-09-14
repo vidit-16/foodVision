@@ -1,4 +1,26 @@
-venv/
+# Python
 __pycache__/
-*.pyc
-.env
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+
+# Model weights are published as a GitHub release asset, never committed.
+*.pt
+*.pth
+*.onnx
+
+# Datasets
+data/
+food-101/
+*.tar.gz
+
+# Evaluation artifacts are regenerated; results.json is not the report.
+evaluation/results.json
+
+# Editors and OS
+.vscode/
+.idea/
+.DS_Store
