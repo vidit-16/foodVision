@@ -1,13 +1,13 @@
 """Model construction and weight resolution.
 
-The 95MB checkpoint is not tracked in git. It is resolved in this order:
+The ~110MB checkpoint is not tracked in git. It is resolved in this order:
 
 1. `FOODVISION_WEIGHTS_PATH`, if set and present on disk.
 2. The cache directory, if a previous run already downloaded it.
 3. The GitHub release asset, downloaded once and checksum-verified.
 
 Construction is separated from weight loading so tests can exercise the model
-contract against a randomly initialised network without a 95MB download.
+contract against a randomly initialised network without a checkpoint download.
 """
 
 from __future__ import annotations
@@ -20,12 +20,13 @@ import urllib.request
 from functools import lru_cache
 from pathlib import Path
 
+import timm
 import torch
 from torch import nn
-from torchvision import models
 
 from app.config import (
     CLASSES_PATH,
+    MODEL_NAME,
     WEIGHTS_CACHE_DIR,
     WEIGHTS_FILENAME,
     WEIGHTS_PATH_OVERRIDE,
@@ -50,11 +51,15 @@ def load_classes() -> list[str]:
     return classes
 
 
-def build_model(num_classes: int) -> nn.Module:
-    """A ResNet-50 with the head resized to `num_classes`. No weights loaded."""
-    model = models.resnet50(weights=None)
-    model.fc = nn.Linear(model.fc.in_features, num_classes)
-    return model
+def build_model(num_classes: int, pretrained: bool = False, **kwargs) -> nn.Module:
+    """The configured network with its head sized to `num_classes`.
+
+    `pretrained` pulls ImageNet backbone weights and is only used by training;
+    the service builds an empty network and loads the fine-tuned checkpoint.
+    """
+    return timm.create_model(
+        MODEL_NAME, pretrained=pretrained, num_classes=num_classes, **kwargs
+    )
 
 
 def _sha256(path: Path) -> str:
@@ -121,7 +126,7 @@ def load_model(device: str | torch.device = "cpu") -> nn.Module:
     """Build the network, load verified weights, and put it in eval mode."""
     classes = load_classes()
     model = build_model(len(classes))
-    state_dict = torch.load(resolve_weights(), map_location=device)
+    state_dict = torch.load(resolve_weights(), map_location=device, weights_only=True)
     missing, unexpected = model.load_state_dict(state_dict, strict=False)
     if missing or unexpected:
         raise WeightsUnavailableError(

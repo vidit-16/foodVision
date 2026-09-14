@@ -32,50 +32,49 @@ data, which is how v1.1.0 was produced.
 
 | File | What it is |
 | --- | --- |
-| `food_vision.ipynb` | The original Colab notebook, kept for provenance. Outputs stripped |
-| `train.py` | The same recipe with the official train/test split restored |
-| `colab_train_and_eval.ipynb` | Open in Colab on a T4, Run all: trains and evaluates in one pass |
+| `food_vision.ipynb` | The original ResNet-50 Colab notebook (v1.0.0), kept for provenance. Outputs stripped |
+| `train.py` | The maintained pipeline: ConvNeXt-Tiny on the official train split |
+| `colab_train_and_eval.ipynb` | Open in Colab on a T4, Run all: trains, resumes after disconnects, evaluates |
 
 ## Reproducing
 
 ```bash
 pip install -r requirements.txt
-python training/train.py --data-dir ./data --epochs 5
+python training/train.py --data-dir ./data
 ```
 
 Food-101 downloads on first run (~5GB). Training uses the official 75,750-image
 train split with 10% held back for validation; the 25,250 test images are left
-for `evaluation/evaluate.py`. Roughly 2,365 batches per epoch at batch size 32,
-about 11 minutes per epoch on a T4.
+for `evaluation/evaluate.py`. About 1,065 batches per epoch at batch size 64,
+roughly 12–15 minutes per epoch on a T4.
 
-Check the wiring first without waiting an hour:
+Check the wiring first:
 
 ```bash
 python training/train.py --data-dir ./data --smoke-test
 ```
 
-## Recipe
+## Recipe (v2.0.0)
 
-| Setting | Value | Source |
-| --- | --- | --- |
-| Backbone | ResNet-50, `IMAGENET1K_V2` | notebook |
-| Head | `Linear(2048, 101)` | notebook |
-| Fine-tuning | All layers | notebook |
-| Optimiser | Adam, lr 1e-4 | notebook |
-| Loss | Cross-entropy | notebook |
-| Precision | AMP on CUDA | notebook |
-| Batch size | 32 | notebook |
-| Epochs | 5 | notebook |
-| Augmentation | None by default; `--augment` opts in | notebook used none |
-| Split | Official train/test, 10% of train for validation | corrected here |
+| Setting | Value |
+| --- | --- |
+| Backbone | ConvNeXt-Tiny, `convnext_tiny.fb_in22k_ft_in1k` (timm) |
+| Head | `Linear(768, 101)` |
+| Fine-tuning | All layers, stochastic depth 0.1 |
+| Optimiser | AdamW, lr 2e-4, weight decay 0.05 |
+| Schedule | 1 warmup epoch, cosine decay to 1e-6 |
+| Loss | Cross-entropy, label smoothing 0.1 |
+| Augmentation | RandomResizedCrop (scale 0.25–1), flip, TrivialAugmentWide, RandomErasing 0.25 |
+| Precision | AMP on CUDA, channels-last |
+| Batch size / epochs | 64 / 12 |
+| Split | Official train/test, 10% of train for validation |
 
-`--augment` adds random resized crop, horizontal flip and colour jitter. It
-departs from the recipe that produced the released weights, so run the default
-first if you want a comparable baseline.
+v1.1.0 used ResNet-50 with the original notebook recipe (Adam 1e-4, 5 epochs, no
+augmentation, direct 224×224 resize) and scored 82.19% top-1.
 
 ## Preprocessing
 
 Validation and inference both use `inference_transform()` from
-`app/preprocessing.py` — the single definition shared with the served API.
-Changing the resize or the normalisation constants invalidates both the released
-checkpoint and any published evaluation numbers.
+`app/preprocessing.py` — the single definition shared with the served API:
+short side to 256, centre crop 224. Changing it invalidates the published
+evaluation numbers.

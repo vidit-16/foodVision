@@ -1,6 +1,6 @@
 """Shared fixtures.
 
-The test suite deliberately does not download the 95MB checkpoint. Everything
+The test suite deliberately does not download the checkpoint. Everything
 that can be verified without trained weights — the output contract, the
 preprocessing, the API's error handling — is verified against a randomly
 initialised network of the same shape. Accuracy is not a unit-test concern; it

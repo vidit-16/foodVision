@@ -1,7 +1,7 @@
 """Preprocessing behaviour.
 
 These tests pin the transform in place. If someone later swaps the direct
-resize for a center crop, or changes the normalization constants, the published
+resize-and-crop for a plain resize, or changes the normalization constants, the published
 evaluation numbers stop describing the deployed model — so the change should
 break a test and force a re-run of evaluation.
 """
@@ -60,3 +60,19 @@ def test_truncated_image_raises_invalid_image():
     truncated = make_image().getvalue()[:60]
     with pytest.raises(InvalidImageError):
         prepare(io.BytesIO(truncated))
+
+
+def test_center_crop_preserves_aspect_ratio():
+    # A wide image: red on the outer thirds, blue in the middle. A direct resize
+    # would keep the red; a short-side resize plus centre crop keeps only blue.
+    from PIL import Image
+
+    image = Image.new("RGB", (900, 300), "red")
+    image.paste(Image.new("RGB", (300, 300), "blue"), (300, 0))
+    buffer = io.BytesIO()
+    image.save(buffer, format="PNG")
+    buffer.seek(0)
+
+    tensor = prepare(buffer)[0]
+    red = (1.0 - NORMALIZE_MEAN[0]) / NORMALIZE_STD[0]
+    assert tensor[0].max() < red - 1.0

@@ -33,6 +33,7 @@ from torchvision.datasets import Food101
 # add the repo root so `app` imports resolve.
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+from app.config import MODEL_NAME  # noqa: E402
 from app.model import load_classes, load_model, select_device  # noqa: E402
 from app.preprocessing import inference_transform  # noqa: E402
 
@@ -120,6 +121,7 @@ def write_report(results: dict, path: Path, device: torch.device, partial: bool)
         "",
         "| Metric | Value |",
         "| --- | --- |",
+        f"| Model | `{MODEL_NAME}` |",
         f"| Test images | {results['images']:,} |",
         f"| Top-1 accuracy | {results['top1'] * 100:.2f}% |",
         f"| Top-5 accuracy | {results['top5'] * 100:.2f}% |",

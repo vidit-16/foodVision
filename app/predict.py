@@ -1,7 +1,7 @@
 """Inference.
 
 The classifier is loaded lazily rather than at import time, so importing this
-module (in tests, in tooling) does not trigger a 95MB download.
+module (in tests, in tooling) does not trigger a checkpoint download.
 """
 
 from __future__ import annotations

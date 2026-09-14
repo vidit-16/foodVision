@@ -16,8 +16,8 @@ logging.basicConfig(level=logging.INFO)
 
 app = FastAPI(
     title="Food Vision",
-    description="ResNet-50 food image classifier over the 101 Food-101 categories.",
-    version="1.0.0",
+    description="ConvNeXt-Tiny food image classifier over the 101 Food-101 categories.",
+    version="2.0.0",
 )
 
 

@@ -1,6 +1,6 @@
 # Food Vision
 
-A ResNet-50 fine-tuned on Food-101, served as a FastAPI inference endpoint.
+A ConvNeXt-Tiny fine-tuned on Food-101, served as a FastAPI inference endpoint.
 
 Upload a food photo, get back the ranked food categories the model thinks it is,
 with confidences. 101 classes, one endpoint, one Docker image.
@@ -47,10 +47,12 @@ The dataset is downloaded on demand by torchvision and is not stored here.
 
 ## Model
 
-ResNet-50 initialised from ImageNet-V2 weights, final layer replaced with a
-101-way linear head, then fine-tuned end to end for 5 epochs with Adam at 1e-4
-and mixed precision, on the official train split. The released artifact is a plain `state_dict` (320 tensors,
-float32, 95MB).
+ConvNeXt-Tiny (28M parameters) from [timm](https://github.com/huggingface/pytorch-image-models),
+initialised from ImageNet-22k weights (`convnext_tiny.fb_in22k_ft_in1k`), with a
+101-way head. Fine-tuned end to end on the official train split for 12 epochs:
+AdamW with warmup and cosine decay, label smoothing, stochastic depth,
+TrivialAugment and random erasing, mixed precision. The released artifact is a
+plain float32 `state_dict`, about 110MB.
 
 Weights are **not committed to git**. They are published as a release asset and
 downloaded on first use into `~/.cache/foodvision`, then verified against a
@@ -60,15 +62,14 @@ predictions from an unknown checkpoint.
 To use a local file instead:
 
 ```bash
-export FOODVISION_WEIGHTS_PATH=/path/to/food_vision_resnet50.pt
+export FOODVISION_WEIGHTS_PATH=/path/to/food_vision_convnext_tiny.pt
 ```
 
 ## Preprocessing
 
-Images are converted to RGB, resized directly to 224×224, and normalised with
-ImageNet statistics. The direct resize distorts aspect ratio rather than
-centre-cropping — that is what the checkpoint was trained with, so inference
-matches training.
+Images are converted to RGB, the short side is resized to 256 (bicubic), the
+centre 224×224 is cropped, and the result is normalised with ImageNet
+statistics. Aspect ratio is preserved.
 
 The transform lives in one place (`app/preprocessing.py`) and is imported by
 both the API and the evaluation script. Evaluating with a different transform
@@ -107,12 +108,14 @@ healthcheck against `/`.
 ## Train
 
 ```bash
-python training/train.py --data-dir ./data --epochs 5
+python training/train.py --data-dir ./data
 ```
 
-About 11 minutes per epoch on a Colab T4. `--smoke-test` runs two batches to
+About 12–15 minutes per epoch on a Colab T4. `--checkpoint-dir` plus `--resume`
+continues after a disconnect. `--smoke-test` runs two batches to
 check the wiring first. `training/colab_train_and_eval.ipynb` does the whole
-retrain-and-score pass in one Run all. The original notebook sits alongside
+retrain-and-score pass in one Run all, resuming from Google Drive if Colab
+disconnects. The original ResNet-50 notebook sits alongside
 `train.py` for provenance; `training/README.md` documents the recipe and where
 the two differ.
 
@@ -147,7 +150,7 @@ directory stays under 50MB.
 ├── app/
 │   ├── config.py         # paths, weight artifact, limits
 │   ├── preprocessing.py  # the one transform definition
-│   ├── model.py          # construction, download, checksum verification
+│   ├── model.py          # timm construction, download, checksum verification
 │   ├── predict.py        # top-k inference
 │   ├── schemas.py        # response contract
 │   └── main.py           # routes
@@ -161,7 +164,7 @@ directory stays under 50MB.
 
 ## Stack
 
-Python · PyTorch · torchvision · FastAPI · Pydantic · Uvicorn · Pillow · Docker ·
+Python · PyTorch · timm · torchvision · FastAPI · Pydantic · Uvicorn · Pillow · Docker ·
 pytest · ruff
 
 ## License

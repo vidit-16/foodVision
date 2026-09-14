@@ -5,9 +5,8 @@ Keeping one definition is the point of the module: if evaluation preprocesses
 images differently from the served endpoint, the reported accuracy does not
 describe the thing that is actually deployed.
 
-Note on the resize: the image is resized directly to 224x224 rather than
-resize-short-side-then-center-crop. This distorts aspect ratio, but it is what
-the shipped checkpoint was trained with, so inference matches training.
+The short side is resized and the centre square cropped, so aspect ratio is
+preserved. Validation during training uses this same transform.
 """
 
 from __future__ import annotations
@@ -18,7 +17,7 @@ import torch
 from PIL import Image, UnidentifiedImageError
 from torchvision import transforms
 
-from app.config import IMAGE_SIZE, NORMALIZE_MEAN, NORMALIZE_STD
+from app.config import IMAGE_SIZE, NORMALIZE_MEAN, NORMALIZE_STD, RESIZE_SIZE
 
 
 class InvalidImageError(ValueError):
@@ -29,7 +28,10 @@ def inference_transform() -> transforms.Compose:
     """The exact transform applied before every forward pass."""
     return transforms.Compose(
         [
-            transforms.Resize((IMAGE_SIZE, IMAGE_SIZE)),
+            transforms.Resize(
+                RESIZE_SIZE, interpolation=transforms.InterpolationMode.BICUBIC
+            ),
+            transforms.CenterCrop(IMAGE_SIZE),
             transforms.ToTensor(),
             transforms.Normalize(NORMALIZE_MEAN, NORMALIZE_STD),
         ]

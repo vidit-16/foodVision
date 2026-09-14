@@ -27,8 +27,9 @@ def test_class_list_on_disk_is_a_json_list():
 
 def test_head_is_sized_to_the_class_list(classes):
     model = build_model(len(classes))
-    assert model.fc.out_features == len(classes)
-    assert model.fc.in_features == 2048
+    head = model.get_classifier()
+    assert head.out_features == len(classes)
+    assert head.in_features == 768
 
 
 def test_forward_pass_produces_one_logit_per_class(untrained_model, classes):
@@ -79,5 +80,6 @@ def test_corrupt_cached_checkpoint_is_rejected(monkeypatch, tmp_path):
     bad = tmp_path / "weights.pt"
     bad.write_bytes(b"not a checkpoint")
     monkeypatch.setattr("app.model.WEIGHTS_PATH_OVERRIDE", str(bad))
+    monkeypatch.setattr("app.model.WEIGHTS_SHA256", "0" * 64)
     with pytest.raises(WeightsUnavailableError, match="checksum mismatch"):
         resolve_weights()
