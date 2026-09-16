@@ -26,6 +26,7 @@ from torch import nn
 
 from app.config import (
     CLASSES_PATH,
+    DOWNLOAD_TIMEOUT_SECONDS,
     MODEL_NAME,
     WEIGHTS_CACHE_DIR,
     WEIGHTS_FILENAME,
@@ -44,10 +45,19 @@ class WeightsUnavailableError(RuntimeError):
 @lru_cache(maxsize=1)
 def load_classes() -> list[str]:
     """Load the ordered class list. Index i corresponds to logit i."""
-    with open(CLASSES_PATH, encoding="utf-8") as handle:
-        classes = json.load(handle)
-    if not isinstance(classes, list) or not classes:
-        raise ValueError(f"{CLASSES_PATH} must contain a non-empty JSON list")
+    try:
+        with open(CLASSES_PATH, encoding="utf-8") as handle:
+            classes = json.load(handle)
+    except FileNotFoundError as exc:
+        raise FileNotFoundError(
+            f"class list not found at {CLASSES_PATH}; set FOODVISION_CLASSES"
+        ) from exc
+    except json.JSONDecodeError as exc:
+        raise ValueError(f"{CLASSES_PATH} is not valid JSON: {exc}") from exc
+    if not isinstance(classes, list) or not classes or not all(
+        isinstance(c, str) for c in classes
+    ):
+        raise ValueError(f"{CLASSES_PATH} must contain a non-empty JSON list of strings")
     return classes
 
 
@@ -85,7 +95,9 @@ def _download(destination: Path) -> None:
     partial = destination.with_suffix(destination.suffix + ".part")
     logger.info("downloading checkpoint from %s", WEIGHTS_URL)
     try:
-        with urllib.request.urlopen(WEIGHTS_URL) as response, open(partial, "wb") as out:
+        with urllib.request.urlopen(
+            WEIGHTS_URL, timeout=DOWNLOAD_TIMEOUT_SECONDS
+        ) as response, open(partial, "wb") as out:
             shutil.copyfileobj(response, out)
     except OSError as exc:
         partial.unlink(missing_ok=True)
@@ -139,4 +151,5 @@ def load_model(device: str | torch.device = "cpu") -> nn.Module:
 
 
 def select_device() -> torch.device:
+    """CUDA when available, otherwise CPU."""
     return torch.device("cuda" if torch.cuda.is_available() else "cpu")

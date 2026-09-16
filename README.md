@@ -1,5 +1,9 @@
 # Food Vision
 
+[![CI](https://github.com/vidit-16/foodVision/actions/workflows/ci.yml/badge.svg)](https://github.com/vidit-16/foodVision/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Python](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12-blue.svg)](https://www.python.org/)
+
 A ConvNeXt-Tiny fine-tuned on Food-101, served as a FastAPI inference endpoint.
 
 Upload a food photo, get back the ranked food categories the model thinks it is,
@@ -37,6 +41,20 @@ dishes — steak vs. filet mignon, chocolate cake vs. mousse, beef vs. tuna tart
 | `v1.0.0` | ResNet-50, trained on test data | not measurable | — |
 
 Details of each in `training/README.md`.
+
+## Architecture
+
+```mermaid
+flowchart LR
+    C[Client] -->|POST /predict image| M[app/main.py<br/>size + top_k validation]
+    M --> P[app/preprocessing.py<br/>RGB, resize 256, crop 224, normalise]
+    P --> I[app/predict.py<br/>softmax + top-k]
+    I --> W[app/model.py<br/>ConvNeXt-Tiny via timm]
+    W -->|first use| R[(GitHub release<br/>checkpoint)]
+    R -->|SHA-256 verified| K[(~/.cache/foodvision)]
+    K --> W
+    E[evaluation/evaluate.py] --> P
+```
 
 ## Dataset
 
@@ -144,6 +162,29 @@ weights — the output contract, preprocessing, error handling, checksum
 rejection — runs against a randomly initialised network of the same shape. That
 keeps CI at about a minute and keeps accuracy where it belongs, in evaluation.
 
+Coverage of `app/` is 93% (CI fails under 85%). Weight download, caching,
+checksum and network-failure paths are covered with the network mocked, and
+parity tests check that the HTTP API, `predict()` and a hand-built
+transform + softmax pipeline return identical results.
+
+**Mutation testing.** `mutmut` does not run natively on Windows, so
+`scripts/mutation_test.py` applies 27 hand-picked mutants (operators,
+constants, guards) to `app/` and re-runs the suite for each.
+Score: **27/27 killed (100%)**. The first run left 3 survivors (resize, crop and normalisation constants), which are now pinned by a preprocessing contract test.
+
+**A/B: ResNet-50 (v1.1.0) vs ConvNeXt-Tiny (v2.0.0).** Accuracy is from the real
+test split; serving cost is measured through the exact serving path by
+`scripts/benchmark_models.py` (CPU, random weights, results in
+`evaluation/AB_LATENCY.md`):
+
+| Variant | Params | float32 size | CPU p50 | CPU p90 | Top-1 | Top-5 |
+| --- | --- | --- | --- | --- | --- | --- |
+| A: resnet50 (v1.1.0) | 23.7M | 95MB | 989 ms | 2524 ms | 82.19% | 96.27% |
+| B: convnext_tiny (v2.0.0, served) | 27.9M | 112MB | 663 ms | 938 ms | 91.89% | 98.76% |
+
+ConvNeXt-Tiny costs 18% more parameters but gains 9.7 points of top-1 and was
+not slower on CPU in this run, which is why it is served.
+
 CI additionally enforces that no `.pt` file is ever committed and that the git
 directory stays under 50MB.
 
@@ -159,12 +200,21 @@ directory stays under 50MB.
 │   ├── schemas.py        # response contract
 │   └── main.py           # routes
 ├── training/             # train.py + the original notebook
-├── evaluation/           # evaluate.py + RESULTS.md
+├── evaluation/           # evaluate.py, RESULTS.md, AB_LATENCY.md
+├── scripts/              # benchmark_models.py, mutation_test.py
 ├── tests/
 ├── model/classes.json
+├── .env.example          # optional FOODVISION_* settings
 ├── Dockerfile
 └── .github/workflows/ci.yml
 ```
+
+## Roadmap
+
+- Image-level test-time augmentation behind a flag, scored with `evaluate.py`
+- ONNX / dynamic-quantised export to cut CPU latency and image size
+- Batch endpoint for multiple images per request
+- Small web UI for drag-and-drop uploads
 
 ## Stack
 

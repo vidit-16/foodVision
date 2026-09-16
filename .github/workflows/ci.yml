@@ -6,6 +6,13 @@ on:
   pull_request:
   workflow_dispatch:
 
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   test:
     name: Tests (Python ${{ matrix.python-version }})
@@ -30,10 +37,10 @@ jobs:
             -r requirements-dev.txt
 
       - name: Lint
-        run: ruff check app tests training evaluation
+        run: ruff check app tests training evaluation scripts
 
       - name: Tests
-        run: pytest -q
+        run: pytest -q --cov=app --cov-report=term-missing --cov-fail-under=85
 
   contracts:
     name: Artifact contracts
