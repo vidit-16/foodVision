@@ -41,7 +41,27 @@ IMAGE_SIZE = 224
 NORMALIZE_MEAN = (0.485, 0.456, 0.406)
 NORMALIZE_STD = (0.229, 0.224, 0.225)
 
+
+def _int_env(name: str, default: int, minimum: int = 1, maximum: int | None = None) -> int:
+    """Read a bounded integer from the environment, failing with a clear message."""
+    raw = os.getenv(name)
+    if raw is None or raw.strip() == "":
+        return default
+    try:
+        value = int(raw)
+    except ValueError as exc:
+        raise ValueError(f"{name} must be an integer, got {raw!r}") from exc
+    if value < minimum or (maximum is not None and value > maximum):
+        upper = "" if maximum is None else f" and <= {maximum}"
+        raise ValueError(f"{name} must be >= {minimum}{upper}, got {value}")
+    return value
+
+
 # API limits.
-MAX_UPLOAD_BYTES = int(os.getenv("FOODVISION_MAX_UPLOAD_BYTES", str(10 * 1024 * 1024)))
-DEFAULT_TOP_K = int(os.getenv("FOODVISION_TOP_K", "5"))
 MAX_TOP_K = 10
+MAX_UPLOAD_BYTES = _int_env("FOODVISION_MAX_UPLOAD_BYTES", 10 * 1024 * 1024)
+# Bounded by MAX_TOP_K: a larger default would make every request without an
+# explicit top_k fail FastAPI's own query validation.
+DEFAULT_TOP_K = _int_env("FOODVISION_TOP_K", 5, maximum=MAX_TOP_K)
+# Seconds before a stalled checkpoint download is abandoned instead of hanging.
+DOWNLOAD_TIMEOUT_SECONDS = _int_env("FOODVISION_DOWNLOAD_TIMEOUT", 60)
